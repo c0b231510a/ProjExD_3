@@ -140,15 +140,40 @@ class Bomb:
         self.rct.move_ip(self.vx, self.vy)
         screen.blit(self.img, self.rct)
 
+class Score:
+    """
+    スコアの表示と更新を管理するクラス
+    """
+    def __init__(self):
+        """
+        スコアの初期化
+        """
+        self.fonto = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30)  # フォントの設定
+        self.score = 0  # スコアの初期値
+
+    def update(self, screen: pg.Surface):
+        """
+        現在のスコアを表示する文字列Surfaceを生成し描画する
+        引数 screen：画面Surface
+        """
+        img = self.fonto.render(f"Score: {self.score}", 0, (0, 0, 255))  # 青色の文字列
+        screen.blit(img, (100, HEIGHT - 50))  # 画面左下に表示
+
+    def add_point(self, points: int):
+        """
+        スコアを加算する
+        引数 points: 加算するポイント
+        """
+        self.score += points
 
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
     bg_img = pg.image.load("fig/pg_bg.jpg")
     bird = Bird((300, 200))
-    bomb = Bomb((255, 0, 0), 10)
-    beam = None #Beam(bird) #ビームインスタン生成
-    bombs = [Bomb((255, 0, 0), 10)for _ in range(NUM_OF_BOMBS)]
+    bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)]
+    score = Score()
+    beam = None
     clock = pg.time.Clock()
     tmr = 0
     while True:
@@ -172,24 +197,25 @@ def main():
                 return
          
 
-        for i ,bomb in enumerate(bombs):
-            if beam is not None:
-                if beam.rct.colliderect(bomb.rct):
-                    beam = None
-                    bombs[i] = None
-                    bird.change_img(6,screen)
-                    pg.display.update()
+        for i, bomb in enumerate(bombs):
+            if beam and beam.rct.colliderect(bomb.rct):
+                bombs[i] = None
+                beam = None
+                score.add_point(1)  # スコアを加算
+                bird.change_img(6,screen)
+                pg.display.update()
 
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
-        # beam.update(screen)
-        bombs = [bomb for bomb in bombs if bomb is not None]  
-        for bomb in bombs: 
+        if beam:
+            beam.update(screen)
+        bombs = [bomb for bomb in bombs if bomb]
+        for bomb in bombs:
             bomb.update(screen)
+        score.update(screen)  # スコアの描画
         if beam is not None:
             beam.update(screen)
         pg.display.update()
-        tmr += 1
         clock.tick(50)
 
 

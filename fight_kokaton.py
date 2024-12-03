@@ -140,6 +140,31 @@ class Bomb:
         self.rct.move_ip(self.vx, self.vy)
         screen.blit(self.img, self.rct)
 
+class Score:
+    """
+    スコアの表示と更新を管理するクラス
+    """
+    def __init__(self):
+        """
+        スコアの初期化
+        """
+        self.fonto = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体", 30)  # フォントの設定
+        self.score = 0  # スコアの初期値
+
+    def update(self, screen: pg.Surface):
+        """
+        現在のスコアを表示する文字列Surfaceを生成し描画する
+        引数 screen：画面Surface
+        """
+        img = self.fonto.render(f"Score: {self.score}", 0, (0, 0, 255))  # 青色の文字列
+        screen.blit(img, (100, HEIGHT - 50))  # 画面左下に表示
+
+    def add_point(self, points: int):
+        """
+        スコアを加算する
+        引数 points: 加算するポイント
+        """
+        self.score += points
 
 class Explosion:
     """
@@ -181,6 +206,8 @@ def main():
     bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)]
     beams = []
     explosions = []  # Explosionインスタンスを管理するリスト
+    beams = []  # Beam インスタンスを管理するリスト
+    score = Score()
     clock = pg.time.Clock()
 
     while True:
@@ -188,7 +215,7 @@ def main():
             if event.type == pg.QUIT:
                 return
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                beams.append(Beam(bird))  # スペースキー押下で新しいビームを追加
+                beams.append(Beam(bird))  # スペースキー押下でBeamを追加
 
         screen.blit(bg_img, [0, 0])
 
@@ -204,13 +231,16 @@ def main():
                 return
 
         # 爆弾とビームの衝突判定
-        for beam in beams[:]:  # ビームリストを安全に操作するため副本を作成
-            for i, bomb in enumerate(bombs):
+        for i, bomb in enumerate(bombs):
+            for beam in beams[:]:  # ビームリストを安全に操作するため副本を作成
                 if beam.rct.colliderect(bomb.rct):
                     # 爆発エフェクトを生成して追加
                     explosions.append(Explosion(bomb.rct.center))
                     beams.remove(beam)
                     bombs[i] = None  # 爆弾を削除
+                    score.add_point(1)
+                    bird.change_img(6, screen)
+                    pg.display.update()
                     break
 
         # 爆弾とビームリストを更新
@@ -222,16 +252,22 @@ def main():
         for explosion in explosions:
             explosion.update(screen)
 
+        beams = [beam for beam in beams if check_bound(beam.rct) == (True, True)]
+
         # 描画と更新
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
         for beam in beams:
             beam.update(screen)
+        bombs = [bomb for bomb in bombs if bomb]
         for bomb in bombs:
             bomb.update(screen)
+        score.update(screen)  # スコアの描画
 
         pg.display.update()
         clock.tick(50)
+
+
 
 
 if __name__ == "__main__":
